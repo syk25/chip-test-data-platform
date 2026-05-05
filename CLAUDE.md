@@ -3,9 +3,10 @@
 ## 프로젝트 개요
 
 - **목표**: 퀄리타스반도체 신입 백엔드 개발자 채용 포트폴리오
+- **채용공고**: https://q-semi.career.greetinghr.com/ko/o/212725
 - **주제**: 칩 검증 데이터 관리 시스템 (Chip Test Data Platform)
 - **마감**: 2026-05-10
-- **구현 시나리오**: 1 (STDF 업로드), 3 (Lot 분석), 6 (측정값 조회) 3가지만
+- **구현 시나리오**: 1 (STDF 업로드), 3 (Lot 분석), 5 (Redis Pub/Sub 실시간 알림), 6 (측정값 조회)
 
 ## 노션 워크스페이스
 
@@ -93,6 +94,7 @@ chip-test-data-platform/
 - **ADR-004**: 파일 스토리지 인터페이스 추상화 (로컬 → S3 교체 1줄)
 - **ADR-005**: measurements 파티셔닝 보류 (1억 행 도달 시 월별 RANGE)
 - **ADR-006**: 모니터링 보류 (structlog 현재, Prometheus/Grafana 운영 시)
+- **ADR-007**: Redis 이중 역할 — 캐시(Cache-Aside) + Pub/Sub 실시간 이벤트. SSE로 클라이언트 전달. Day 3 Worker publish, Day 5 GET /api/v1/events 구현
 
 ## 의사결정 우선순위 (충돌 시)
 

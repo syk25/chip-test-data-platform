@@ -1,0 +1,43 @@
+[project]
+name = "chip-test-data-platform"
+version = "0.1.0"
+description = "Chip Test Data Platform — STDF 파일 수집·파싱·저장·조회 백엔드"
+requires-python = ">=3.12"
+dependencies = [
+    # Web
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    # DB / ORM
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14.0",
+    "asyncpg>=0.30.0",
+    # Validation / Settings
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    # Auth
+    "pyjwt>=2.10.0",
+    "passlib[bcrypt]>=1.7.4",
+    # Message Queue
+    "aio-pika>=9.5.0",
+    # Cache
+    "redis[asyncio]>=5.2.0",
+    # STDF Parser
+    "pystdf>=1.0.3",
+    # Logging
+    "structlog>=24.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.28.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

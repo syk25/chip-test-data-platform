@@ -1,0 +1,146 @@
+services:
+
+  # ──────────────────────────────────────────
+  # Infrastructure
+  # ──────────────────────────────────────────
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chip_test_db
+      POSTGRES_USER: ctdp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ctdp -d chip_test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ctdp
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-devpassword}
+      RABBITMQ_DEFAULT_VHOST: chip_test
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI (개발용)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # Application
+  # ──────────────────────────────────────────
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./app:/app/app          # 개발 시 코드 핫리로드
+      - stdf_storage:/app/storage
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://ctdp:${POSTGRES_PASSWORD:-devpassword}@db:5432/chip_test_db
+      - RABBITMQ_URL=amqp://ctdp:${RABBITMQ_PASSWORD:-devpassword}@rabbitmq:5672/chip_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - STORAGE_PATH=/app/storage
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m app.worker
+    volumes:
+      - ./app:/app/app          # api와 같은 코드베이스
+      - stdf_storage:/app/storage
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://ctdp:${POSTGRES_PASSWORD:-devpassword}@db:5432/chip_test_db
+      - RABBITMQ_URL=amqp://ctdp:${RABBITMQ_PASSWORD:-devpassword}@rabbitmq:5672/chip_test
+      - STORAGE_PATH=/app/storage
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # Reverse Proxy
+  # ──────────────────────────────────────────
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    networks:
+      - backend
+    restart: unless-stopped
+
+# ──────────────────────────────────────────
+# Volumes (named — Docker가 관리)
+# ──────────────────────────────────────────
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+  stdf_storage:    # api ↔ worker 공유 파일 스토리지
+
+# ──────────────────────────────────────────
+# Networks
+# ──────────────────────────────────────────
+
+networks:
+  backend:
+    driver: bridge

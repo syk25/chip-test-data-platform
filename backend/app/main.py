@@ -43,15 +43,18 @@ async def health() -> dict:
 
 
 # ── 라우터 등록 ──────────────────────────────────────────
-from app.routers import audit_logs as audit_router  # Day 4
-from app.routers import auth as auth_router          # Day 1
-from app.routers import events as events_router      # Day 3
-from app.routers import stdf as stdf_router          # Day 3
-from app.routers import users as users_router        # Day 4
+from app.routers import audit_logs as audit_router      # Day 4
+from app.routers import auth as auth_router              # Day 1
+from app.routers import events as events_router          # Day 3
+from app.routers import lots as lots_router              # Day 5
+from app.routers import measurements as meas_router      # Day 5
+from app.routers import stdf as stdf_router              # Day 3
+from app.routers import users as users_router            # Day 4
 
 app.include_router(auth_router.router,   prefix="/api/v1")
 app.include_router(stdf_router.router,   prefix="/api/v1")
 app.include_router(events_router.router, prefix="/api/v1")
 app.include_router(users_router.router,  prefix="/api/v1")
 app.include_router(audit_router.router,  prefix="/api/v1")
-# Day 5: lots, measurements 라우터 추가 예정
+app.include_router(lots_router.router,   prefix="/api/v1")
+app.include_router(meas_router.router,   prefix="/api/v1")

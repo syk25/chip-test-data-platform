@@ -1,10 +1,23 @@
+from contextlib import asynccontextmanager
+
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.connections import close_connections, init_connections
 
 logger = structlog.get_logger()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_connections()
+    logger.info("api.started", environment=settings.ENVIRONMENT)
+    yield
+    await close_connections()
+    logger.info("api.stopped")
+
 
 app = FastAPI(
     title="Chip Test Data Platform",
@@ -12,6 +25,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -23,21 +37,17 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def startup() -> None:
-    logger.info("api.started", environment=settings.ENVIRONMENT)
-
-
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    logger.info("api.stopped")
-
-
 @app.get("/api/v1/health", tags=["system"])
 async def health() -> dict:
     return {"status": "ok", "environment": settings.ENVIRONMENT}
 
 
-from app.routers import auth as auth_router
+# ── 라우터 등록 ──────────────────────────────────────────
+from app.routers import auth as auth_router        # Day 1
+from app.routers import events as events_router    # Day 3
+from app.routers import stdf as stdf_router        # Day 3
 
-app.include_router(auth_router.router, prefix="/api/v1")
+app.include_router(auth_router.router,   prefix="/api/v1")
+app.include_router(stdf_router.router,   prefix="/api/v1")
+app.include_router(events_router.router, prefix="/api/v1")
+# Day 4: lots, measurements, audit_logs 라우터 추가 예정

@@ -61,7 +61,20 @@ async def upload_stdf(
             uploaded_by = int(payload["sub"])
         except Exception:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다.")
-        osat_id = 1  # 내부 사용자는 기본 OSAT 사용
+        # 내부 사용자는 'INTERNAL' OSAT 자동 생성(최초 1회)
+        from sqlalchemy import select as _sel
+        _res = await db.execute(_sel(Osat).where(Osat.code == "INTERNAL"))
+        _osat = _res.scalar_one_or_none()
+        if not _osat:
+            import bcrypt as _bcrypt
+            _osat = Osat(
+                code="INTERNAL",
+                name="내부 사용자",
+                api_key_hash=_bcrypt.hashpw(b"internal-not-used", _bcrypt.gensalt()).decode(),
+            )
+            db.add(_osat)
+            await db.flush()
+        osat_id = _osat.id
         await audit.log(db, "stdf.upload.start", user_id=uploaded_by,
                         resource_name=file.filename, ip_address=get_client_ip(request))
 

@@ -26,16 +26,6 @@ WORKER_ID = str(uuid.uuid4())[:8]
 
 async def check_fail_rate(lot_id: int, db) -> float:
     """Lot의 전체 FAIL률 계산."""
-    result = await db.execute(
-        select(
-            func.count(Part.id).label("total"),
-            func.sum(func.cast(~Part.is_pass, type_=aio_pika.abc.AbstractIncomingMessage.__class__)).label("fail"),
-        )
-        .join(Wafer, Part.wafer_id == Wafer.id)
-        .where(Wafer.lot_id == lot_id)
-    )
-    # 간단히 scalar로 계산
-    from sqlalchemy import Integer, case
     total_result = await db.execute(
         select(func.count(Part.id))
         .join(Wafer, Part.wafer_id == Wafer.id)

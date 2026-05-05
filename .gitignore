@@ -53,3 +53,4 @@ CLAUDE.md
 
 # STDF storage (로컬 파일 스토리지는 추적 안 함)
 storage/
+*.stdf

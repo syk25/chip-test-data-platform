@@ -3,7 +3,7 @@ import json
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.connections import get_redis
@@ -40,7 +40,7 @@ async def _lot_stats(lot_id: int, db: AsyncSession) -> dict:
 
     for w in wafers:
         count_result = await db.execute(
-            select(func.count(Part.id), func.sum(func.cast(Part.is_pass, type_=None)))
+            select(func.count(Part.id), func.sum(func.cast(Part.is_pass, Integer)))
             .where(Part.wafer_id == w.id)
         )
         row = count_result.one()

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class StdfUploadResponse(BaseModel):
@@ -13,11 +13,11 @@ class StdfUploadResponse(BaseModel):
 
 
 class JobStatusResponse(BaseModel):
-    job_id: int
-    file_id: int
-    status: str          # pending | processing | success | failure
+    job_id: int = Field(validation_alias="id")
+    file_id: int = Field(validation_alias="stdf_file_id")
+    status: str
     error_message: str | None
     started_at: datetime | None
     finished_at: datetime | None
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}

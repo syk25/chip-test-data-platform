@@ -46,6 +46,7 @@ alembic/__pycache__/
 .vscode/
 .idea/
 .claude/
+CLAUDE.md
 *.swp
 *.swo
 .DS_Store
